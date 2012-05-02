@@ -1,0 +1,4 @@
+#!/bin/sh
+
+exec setuidgid Gdnslog \
+  /usr/local/bin/tinystats -h /var/log/tinydns multilog t n3 s250000 /var/log/tinydns

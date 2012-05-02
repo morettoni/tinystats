@@ -1,0 +1,231 @@
+#!/bin/sh
+
+# $Id: tinydns.sh.sample,v 1.2 2005/08/16 15:32:42 luca Exp $
+
+RRDUPDATE=/usr/local/bin/rrdupdate
+RRDTOOL=/usr/local/bin/rrdtool
+TIMES="3600 86400 604800 2592000 31536000"
+HOSTNAME=`hostname`
+
+### user config vars (don't edit here, override by tinydns.conf):
+# tinystats output dir
+TINYSTATS=/var/log/tinydns/stats
+
+# rrd db
+RRDDB=/var/db/rrd/tinydns.rrd
+
+# html and images output dir
+OUT=/home/www/rrd-tiny/
+
+# type of RRs to graph
+TYPE="A NS CNAME SOA PTR HINFO MX TXT RP SIG KEY AAAA AXFR ANY"
+
+# type of errors to graph
+ERROR="OTHER NOTAUTH NOTIMPL BADCLASS NOQUERY"
+
+# build the html pages
+HTML=1
+### end of user config vars
+
+[ -f `dirname $0`/tinydns.conf ] && . `dirname $0`/tinydns.conf
+
+[ ! -f ${RRDDB} ] && ${RRDTOOL} create ${RRDDB} --start N \
+	DS:A:DERIVE:600:0:U       DS:NS:DERIVE:600:0:U \
+	DS:CNAME:DERIVE:600:0:U   DS:SOA:DERIVE:600:0:U \
+	DS:PTR:DERIVE:600:0:U     DS:HINFO:DERIVE:600:0:U \
+	DS:MX:DERIVE:600:0:U      DS:TXT:DERIVE:600:0:U \
+	DS:RP:DERIVE:600:0:U      DS:SIG:DERIVE:600:0:U \
+	DS:KEY:DERIVE:600:0:U     DS:AAAA:DERIVE:600:0:U \
+	DS:AXFR:DERIVE:600:0:U    DS:ANY:DERIVE:600:0:U \
+	DS:TOTAL:DERIVE:600:0:U \
+        DS:OTHER:DERIVE:600:0:U   DS:NOTAUTH:DERIVE:600:0:U \
+        DS:NOTIMPL:DERIVE:600:0:U DS:BADCLASS:DERIVE:600:0:U \
+        DS:NOQUERY:DERIVE:600:0:U \
+	RRA:AVERAGE:0.5:1:576     RRA:AVERAGE:0.5:6:576 \
+	RRA:AVERAGE:0.5:24:576    RRA:AVERAGE:0.5:288:576
+
+VALUE=`head -n1 ${TINYSTATS}/tinystats.out`
+
+${RRDUPDATE} ${RRDDB} N:${VALUE} > /dev/null
+
+IFS=" "
+for TIME in ${TIMES}; do
+	LINK_H="<A HREF=\"index.html\">hour</A>"
+	LINK_D="<A HREF=\"tinydns-day.html\">day</A>"
+	LINK_W="<A HREF=\"tinydns-week.html\">week</A>"
+	LINK_M="<A HREF=\"tinydns-month.html\">month</A>"
+	LINK_Y="<A HREF=\"tinydns-year.html\">year</A>"
+
+	case ${TIME} in
+		3600) NAME="hour"; FILE="index.html"; LINK_H="hour" ;;
+		86400) NAME="day"; FILE="tinydns-day.html"; LINK_D="day" ;;
+		604800) NAME="week"; FILE="tinydns-week.html"; LINK_W="week" ;;
+		2592000) NAME="month"; FILE="tinydns-month.html"; LINK_M="month" ;;
+		31536000) NAME="year"; FILE="tinydns-year.html"; LINK_Y="year" ;;
+	esac
+
+	TAG=""
+	for RR in ${TYPE}; do
+		COLOR="#0000ff"
+		GRAPH="AREA"
+
+		case ${RR} in
+                        A) COLOR="#0000ff" ;;
+                        NS) COLOR="#00b100" ;;
+                        CNAME) COLOR="#efcc8e" ;;
+                        SOA) COLOR="#008800" ;;
+                        PTR) COLOR="#5ac9a9" ;; 
+                        HINFO) COLOR="#cec95c" ;;
+                        MX) COLOR="#ffff00" ;;
+                        TXT) COLOR="#d3e7ff" ;;   
+                        RP) COLOR="#5a172d" ;;
+                        SIG) COLOR="#a02c80" ;;
+                        KEY) COLOR="#808080" ;;
+                        AAAA) COLOR="#eac6bd" ;;
+                        AXFR) COLOR="#bf8970" ;; 
+                        ANY) COLOR="#ef59d4" ;;
+		esac
+		RR_TAG=`printf "%-5s" ${RR}`
+
+		TAG="${TAG} \"DEF:${RR}v=${RRDDB}:${RR}:AVERAGE\""
+		TAG="${TAG} \"${GRAPH}:${RR}v${COLOR}:${RR_TAG} queries/sec:STACK\""
+		TAG="${TAG} \"GPRINT:${RR}v:LAST:Cur\\: %7.2lf%s\""
+                TAG="${TAG} \"GPRINT:${RR}v:AVERAGE:Avg\\: %7.2lf%s\""
+                TAG="${TAG} \"GPRINT:${RR}v:MAX:Max\\: %7.2lf%s\\j\""
+	done
+	TAG="${TAG} \"DEF:TOTALv=${RRDDB}:TOTAL:AVERAGE\""
+	TAG="${TAG} \"COMMENT:  TOTAL queries/sec\""
+	TAG="${TAG} \"GPRINT:TOTALv:LAST:Cur\\: %7.2lf%s\""
+	TAG="${TAG} \"GPRINT:TOTALv:AVERAGE:Avg\\: %7.2lf%s\""
+	TAG="${TAG} \"GPRINT:TOTALv:MAX:Max\\: %7.2lf%s\\j\""
+
+	TITLE="DNS request (${NAME}) on ${HOSTNAME} - `date "+%H:%M %d/%m/%y"`"
+
+	eval "${RRDTOOL} graph ${OUT}/${HOSTNAME}-tinydns-${NAME}.png -t \"${TITLE}\" -a PNG -h 125 -s -${TIME} ${TAG} > /dev/null"
+
+        # error
+        TAG=""
+        for RR in ${ERROR}; do
+                COLOR="#0000ff"
+                GRAPH="AREA"
+
+                case ${RR} in
+                        OTHER)    COLOR="#d3e7ff"; RR_TAG="Other RR         " ;;
+                        NOTAUTH)  COLOR="#ff0000"; RR_TAG="Not authotitative" ;;
+                        NOTIMPL)  COLOR="#ffff00"; RR_TAG="Not implemented  " ;;
+                        BADCLASS) COLOR="#004080"; RR_TAG="Bad class type   " ;;
+                        NOQUERY)  COLOR="#c0c0c0"; RR_TAG="Empty query      " ;;
+                esac
+                # RR_TAG=`printf "%-8s" ${RR}`
+
+                TAG="${TAG} \"DEF:${RR}v=${RRDDB}:${RR}:AVERAGE\""
+                TAG="${TAG} \"${GRAPH}:${RR}v${COLOR}:${RR_TAG}:STACK\""
+                TAG="${TAG} \"GPRINT:${RR}v:LAST:Cur\\: %7.2lf%s\""
+                TAG="${TAG} \"GPRINT:${RR}v:AVERAGE:Avg\\: %7.2lf%s\""
+                TAG="${TAG} \"GPRINT:${RR}v:MAX:Max\\: %7.2lf%s\\j\""
+        done
+        TITLE="DNS error (${NAME}) on ${HOSTNAME} - `date "+%H:%M %d/%m/%y"`"
+
+        eval "${RRDTOOL} graph ${OUT}/${HOSTNAME}-error-${NAME}.png -t \"${TITLE}\" -a PNG -h 125 -s -${TIME} ${TAG} > /dev/null"
+
+	[ ${HTML} = 1 -a ! -f ${OUT}/${FILE} ] && cat <<EOF > ${OUT}/${FILE}
+<HTML>
+<HEAD>
+<TITLE>${HOSTNAME} dnscache stats</TITLE>
+<META HTTP-EQUIV="Refresh" CONTENT="600">
+</HEAD>
+<BODY>
+<!-- This page was generated with tinystats, a software developed by Luca Morettoni - http://morettoni.net/ -->
+<H1>${HOSTNAME} tinydns stats</H1>
+<P>
+Go to:
+ ${LINK_H} - ${LINK_D} - ${LINK_W} - ${LINK_M} - ${LINK_Y}
+<HR>
+<TABLE BORDER="0">
+ <TR>
+  <TD VALIGN="TOP">
+   <B>RR type requests (one ${NAME})</B><BR>
+   <IMG src="${HOSTNAME}-tinydns-${NAME}.png" alt="RR type requests (one ${NAME})">
+  </TD>
+  <TD VALIGN="TOP">
+   <B>errors (one ${NAME})</B><BR>
+   <IMG src="${HOSTNAME}-error-${NAME}.png" alt="errors (one ${NAME})">
+  </TD>
+ </TR>
+</TABLE>
+<HR>
+<ADDRESS>This page was generated with <b>tinystats</b>, a software developed by <A HREF="http://morettoni.net/">Luca Morettoni</A></ADDRESS>
+</BODY>
+</HTML>
+EOF
+done
+
+exit
+[ ${INDEX} = 0 -o -f ${OUT}/index.html ] && exit
+
+cat <<EOF > ${OUT}/index.html
+<HTML>
+<HEAD>
+<TITLE>${HOSTNAME} tinydns stats</TITLE>
+<META HTTP-EQUIV="Refresh" CONTENT="600">
+</HEAD>
+<BODY>
+<!-- This page was generated with tinystats, a software developed by Luca Morettoni - http://morettoni.net/ -->
+<H1>${HOSTNAME} tinydns stats</H1>
+<ADDRESS>This page was generated with <b>tinystats</b>, a software developed by <A HREF="http://morettoni.net/">Luca Morettoni</A></ADDRESS>
+<HR>
+<TABLE BORDER="0">
+ <TR>
+  <TD VALIGN="TOP">
+   <B>RR type requests (one hour)</B><BR>
+   <IMG src="${HOSTNAME}-tinydns-hour.png" alt="RR type requests (one hour)">
+  </TD>
+  <TD VALIGN="TOP">
+   <B>errors (one hour)</B><BR>
+   <IMG src="${HOSTNAME}-error-hour.png" alt="errors (one hour)">
+  </TD>   
+ </TR>
+ <TR>
+  <TD VALIGN="TOP">
+   <B>RR type requests (one day)</B><BR>
+   <IMG src="${HOSTNAME}-tinydns-day.png" alt="RR type requests (one day)">
+  </TD>
+  <TD VALIGN="TOP">
+   <B>errors (one day)</B><BR>
+   <IMG src="${HOSTNAME}-error-day.png" alt="errors (one day)">
+  </TD>
+ </TR>
+ <TR>
+  <TD VALIGN="TOP">
+   <B>RR type requests (one week)</B><BR>
+   <IMG src="${HOSTNAME}-tinydns-week.png" alt="RR type requests (one week)">
+  </TD>
+  <TD VALIGN="TOP">
+   <B>errors (one week)</B><BR>
+   <IMG src="${HOSTNAME}-error-week.png" alt="errors (one week)">
+  </TD>
+ </TR>
+ <TR>
+  <TD VALIGN="TOP">
+   <B>RR type requests (one month)</B><BR>
+   <IMG src="${HOSTNAME}-tinydns-month.png" alt="RR type requests (one month)">
+  </TD>
+  <TD VALIGN="TOP">
+   <B>errors (one month)</B><BR>
+   <IMG src="${HOSTNAME}-error-month.png" alt="errors (one month)">
+  </TD>
+ </TR>
+ <TR>
+  <TD VALIGN="TOP">
+   <B>RR type requests (one year)</B><BR>
+   <IMG src="${HOSTNAME}-tinydns-year.png" alt="RR type requests (one year)">
+  </TD>
+  <TD VALIGN="TOP">
+   <B>errors (one year)</B><BR>
+   <IMG src="${HOSTNAME}-error-year.png" alt="errors (one year)">
+  </TD>
+ </TR>
+</TABLE>
+</BODY>
+</HTML>
+EOF

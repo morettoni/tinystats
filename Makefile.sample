@@ -1,0 +1,22 @@
+# $Id: Makefile.sample,v 1.3 2005/08/19 10:04:54 luca Exp $
+
+# directory where you store zone info
+# fetched from master server (base is tinydns/root: .)
+ZONEDIR?=.
+
+# data file owner, set to the tinydns/log user (usually Gdnslog)
+OWN?=Gdnslog
+
+data.cdb: data
+	/usr/local/bin/tinydns-data
+	@chown ${OWN} data.cdb
+
+data: ${ZONEDIR}/*.data
+	@echo "# don't edit this file, edit <zone>.data files" > data
+	@for FILE in ${ZONEDIR}/*.data; do \
+		echo "adding `basename $${FILE}`..."; \
+		echo "" >> data; \
+		echo "# $${FILE}" >> data; \
+		cat $${FILE} >> data; \
+	done
+	@chown ${OWN} data

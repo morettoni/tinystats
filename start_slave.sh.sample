@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# $Id: start_slave.sh.sample,v 1.1 2005/08/23 06:28:03 luca Exp $
+
+TINYSVC=/service/tinydns
+ALLOW=${TINYSVC}/root/allow
+SCRIPT_DIR=${TINYSVC}/root
+
+# get from master every zone listed in $ALLOW
+for LINE in `cat ${ALLOW}`; do
+  ${SCRIPT_DIR}/update_slave.sh.sample `echo ${LINE} | tr ":" " "`
+done

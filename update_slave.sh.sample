@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# $Id: update_slave.sh.sample,v 1.4 2005/08/23 06:28:03 luca Exp $
+
+IP=$1
+DOMAIN=$2
+TINYSVC=/service/tinydns
+ALLOW=${TINYSVC}/root/allow
+PREFIX=/usr/local
+ZONEDIR=${TINYSVC}/root
+
+# check into $ALLOW file if the sender of the notify is
+# the master for $DOMAIN
+# file format:
+# domain.tld:master_ip
+grep -q "${DOMAIN}:${IP}" ${ALLOW} || exit 111
+
+# make a backup of the old zone
+[ -f ${ZONEDIR}/${DOMAIN}.data ] && mv ${ZONEDIR}/${DOMAIN}.data ${ZONEDIR}/${DOMAIN}.old
+
+${PREFIX}/bin/tcpclient ${IP} 53 \
+  ${PREFIX}/bin/axfr-get ${DOMAIN} ${ZONEDIR}/${DOMAIN}.data ${ZONEDIR}/${DOMAIN}.tmp
+
+if [ $? = 0 ]; then
+  # parse here $DOMAIN.data file and update your tinydns data file
+  # or see Makefile.sample
+
+  # after update remember to run:
+  # cd ${TINYSVC}/root && make
+
+  # remove old zone
+  rm -f ${ZONEDIR}/${DOMAIN}.old
+else
+  # clean temp file and restore backup
+  rm -f ${ZONEDIR}/${DOMAIN}.tmp
+  mv ${ZONEDIR}/${DOMAIN}.old ${ZONEDIR}/${DOMAIN}.data
+fi

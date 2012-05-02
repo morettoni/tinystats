@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+ <head>
+  <title>tinystats</title>
+  <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+  <meta name="description" content="Luca Morettoni, software and internet consulting">
+  <meta name="keywords" content="internet,software,sviluppo,unix,freebsd,bsd,linux,qmail,djbdns,tinydns,c,php,opensource,italia">
+  <meta name="author" content="Luca Morettoni">
+  <meta name="robots" content="all">
+  <meta name="rating" content="general">
+ </head>
+ <body>
+  <!-- $Id: tinystats.en.html,v 1.7 2006/01/12 14:28:56 luca Exp $ -->
+  <a href="index.html">Luca Morettoni</a>
+  <br>
+  <a href="tinystats.html">Versione italiana</a>
+  <h1>tinystats</h1>
+  <tt>tinystats</tt> is a filter that reads <b>tinydns</b> logs and stores stats 
+  about query types and errors of your authoritative dns.
+  <br>
+  This software is inspired by <a href="http://www.campin.net/DNS/graph.html">Nate Campi</a>'s
+  system, but <tt>tinystats</tt> is written in C in order to reduce the amount of resources.
+  <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+<input type="hidden" name="cmd" value="_s-xclick">
+Support this project:
+<input type="image" src="https://www.paypal.com/it_IT/i/btn/x-click-but04.gif" border="0" name="submit" alt="Effettua i tuoi pagamenti con PayPal.  un sistema rapido, gratuito e sicuro.">
+<input type="hidden" name="encrypted" value="-----BEGIN PKCS7-----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-----END PKCS7-----
+">
+</form>
+  <h2>Installation</h2>
+  Download the package <a href="/bsd/tinystats-1.1.tar.gz">tinystats-1.1.tar.gz</a> (Perugia, Italy)
+  <p>
+  To compile do:
+<pre>
+     tar -xfz tinystats-<i>[version]</i>.tar.gz
+     cd tinystats
+     make install strip
+</pre>
+  (if you want to modify building and/or installation options, please refer to the top of 
+  <tt>Makefile</tt>).
+  <p>
+  If you patched <tt>djbdns</tt> to enable IPv6, you can define the <tt>WITH_IPV6</tt> variable 
+  (e.g. <tt>make -D WITH_IPV6 ...</tt>).
+  <p>
+  If you're running <a href="http://www.FreeBSD.org">FreeBSD</a> you can install <tt>tinystats</tt>
+  with his port:
+<pre>
+    cd /usr/ports/dns/tinystats
+    make install clean
+</pre>
+  <h2>Use</h2>
+  Once built and installed, you should modify <tt>tinydns/log/run</tt> file in order to run <tt>tinystats</tt>.
+  The syntax command is:
+<pre>
+    tinystats [-h] [-s progr] output progr
+</pre>
+  where <tt>output</tt> is the directory will contain <tt>tinystats.out</tt>
+  (the stats file) and <tt>progr</tt> is the log receiver (usually <tt>multilog</tt>).
+  <br>
+  New <tt>log/run</tt> file becomes (check <tt>tinydns.log.run.sample</tt> file
+  inside the package):
+<pre>
+    exec setuidgid Gdnslog tinystats -h ./main/tinystats/ \
+        multilog t n3 s250000 ./main/
+</pre>
+  If you set <tt>-h</tt> option, <tt>tinystats</tt> transforms <tt>tinydns</tt> logs
+  into a human-readable form (decimal IP and query type string), here is an example:
+<pre>
+192.168.0.50    57552 [56427] + MX   home.morettoni.local
+192.168.0.2     64228 [05045] + A    current.morettoni.local
+192.168.0.2     28675 [10102] + ANY  morettoni.local
+192.168.0.2     51488 [23734] + PTR  254.0.168.192.in-addr.arpa
+</pre>
+  <h2>Slave server</h2>
+  If you use <tt>tinydns</tt> as a slave of BIND master you can specify <tt>-s</tt>
+  option to set the notify manager. When a master server send to <tt>tinydns</tt>
+  the notify of zone update into the log, you can find an unimplemented request
+  (<tt>I</tt> char) of <tt>SOA</tt> record (value <tt>0006</tt>); <tt>tinystats</tt> 
+  will run the proper program after <tt>-s</tt> option with the following parameters:
+  <ul>
+    <li><b>IP</b> of master server that sent the notify;
+    <li><b>the zone</b> to be updated
+  </ul>
+  inside the package you can find an example script (<tt>update_slave.sh.sample</tt>) useful
+  to manage updates, the <tt>Makefile.sample</tt> is a replace version for <tt>Makefile</tt>
+  inside <tt>tinydns/root</tt>: that script merges all data file downloaded from master servers
+  and rebuilds <tt>data.cdb</tt>.<br>
+  Example scripts refer to <tt>tinydns/root/allow</tt> configuration file; this file holds the 
+  slave's zone list and the master server's IP. The syntax is:
+<pre>
+  zoneA.tld:MASTER_IP
+  zoneB.tld:ANOTHER_MASTER_IP
+</pre>
+  You can store zone file in a different directory from <tt>tinydns/root</tt> simply editing
+  <tt>ZONEDIR</tt> variable in both scripts, is important to make <tt>*.data</tt>, <tt>data</tt>
+  and <tt>data.cdb</tt> files writable to <tt>tinydns/log</tt> owner user.<br>
+  The <tt>start_slave.sh.sample</tt> script downloads all zones listed in <tt>allow</tt> file,
+  helpful for the first startup of your slave server.
+  <h2>Signals</h2>
+  If <tt>tinystats</tt> receives <b>ALRM</b>, <b>TERM</b> and <b>HUP</b> signals:
+  <ul>
+    <li><b>ALRM</b>: all values in the stats file are set to 0 and the signal is
+    send to <tt>prog</tt>;
+    <li><b>TERM</b>: the signal is send to <tt>prog</tt>;
+    <li><b>HUP</b>: all values in the stats file are set to 0.
+  </ul>
+  <h2>Stats</h2>
+  <tt>tinystats</tt>'s output file has two lines: the first line has counters
+  of query types and the second line is a brief explanation of fields.
+  <br>
+  Here is an example:
+<pre>
+386:7:0:4:0:0:272:8:0:0:0:122:0:6:860:24:1:0:0:30
+a:ns:cname:soa:ptr:hinfo:mx:txt:rp:sig:key:aaaa:axfr:any:total:other:notauth:notimpl:badclass:noquery
+</pre>
+  First 15 field are self-explanatory, last 6 are:
+  <ul>
+    <li><b>total</b>: total number of queries received by <tt>tinydns</tt> (sum of
+    first 15 fields and of last 5);
+    <li><b>other</b>: RR not coded in <tt>tinystats</tt>;
+    <li><b>notauth</b>: <tt>tinydns</tt> not authoritative for the requested domain;
+    <li><b>notimpl</b>: request not implemented in <tt>tinydns</tt>;
+    <li><b>badclass</b>: class not implemented in <tt>tinydns</tt>;
+    <li><b>noquery</b>: empty or error query.
+  </ul>
+  <h2>Graphs</h2>
+  With <a href="http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/index.en.html">RRDtools</a>
+  you can build some graphics about queries and errors logged by <tt>tinystats</tt>,
+  in the package you can find a shell script (<tt>tinydns.sh.sample</tt>) that you can
+  run from your <tt>crontab</tt> and it reads values and update graphs.
+  You can configure the script by setting up few variables into the <tt>tinydns.conf</tt> file
+  (keep it into the same directory of the script), these variables are:
+  <ul>
+    <li><b>TINYSTATS</b>: directory where <tt>tinystats</tt> stores its stats;
+    <li><b>RRDDB</b>: directory and name of RRD RRD (the script create if at first run);
+    <li><b>OUT</b>: directory where the script puts graphics;
+    <li><b>TYPE</b>: RR list to include in the graph separated by space (for the name
+    refer to the first 15 fields, but write it uppercase, e.g.: for <b>ns</b> write <b>NS</b>);
+    <li><b>ERROR</b>: error list to include in the graph (the name are the last 5 field, uppercase);
+    <li><b>HTML</b>: set this to <tt>1</tt> to build HTML pages.
+  </ul>
+  At the top of the script you can see the default values of this variables.
+  <p>
+  Some examples of <tt>tinystats</tt> in action:
+  <ul>
+    <li>primary server of <a href="http://www.aipnet.it/rrd-tiny/">aipnet.it</a>;
+    <li>master and slave server of <a href="http://ns.tomato.it/graph/">TOMATO Interactive</a>;
+    <li>3 authoritative server of <a href="http://www.m4d.it/">m4d.it</a>: 
+        <a href="http://a.ns.m4d.it/stats">a.ns.m4d.it</a>, 
+        <a href="http://b.ns.m4d.it/stats">b.ns.m4d.it</a>,
+        <a href="http://c.ns.m4d.it/stats">c.ns.m4d.it</a>.
+  </ul>
+  <h2>Thanks</h2>
+  <ul>
+    <li>Manuel Martini: for a lot of hints and testing it into his DNS;
+    <li>Riccardo Torrini: for the color hints and the idea of query/error separation;
+    <li>Filippo Natali: for the FreeBSD port;
+    <li>Riccardo Andreoli: for the corrections of the English page;
+    <li>Collin R. Mulliner: for the hints about IPv6;
+    <li>Everybody downloads, checks, debugs and uses <tt>tinystats</tt>!
+  </li>
+ </body>
+</html>

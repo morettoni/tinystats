@@ -1,0 +1,60 @@
+tinystats suite - v1.1
+======================
+
+1. compile the program:
+   make
+
+   if you have tinydns installed with IPv6 patch compile tinystats with:
+   make -DWITH_IPV6
+
+2. install the program:
+   make install
+
+3. edit your tinydns/log/run file like tinydns.log.run.sample
+   file (remember to create tinystats output dir and chown to
+   Gdnslog)
+
+4. restart tinydns log (svc -t .../tinydns/log)
+
+after a query, in stats there is a file, called tinystats.out, in this
+file you find this:
+
+474:0:0:0:6:0:4:0:0:0:0:73:0:0:557:0:0:0:0:0
+a:ns:cname:soa:ptr:hinfo:mx:txt:rp:sig:key:aaaa:axfr:any:total:other:notauth:notimpl:badclass:noquery
+
+the second line is like a legend of the first
+
+5. create tinydns.conf (see variable in the top of tinydns.sh.sample),
+   rename tinydns.sh.sample to tinydns.sh and run it on your crontab
+   (every 5 minute is ok)
+
+6. if you want a "humar readable" tinydns log output, you can add -h option
+   before the stats dir!
+   With this option the log look like this:
+
+192.168.0.2     01896 [23391] + PTR  2.0.168.192.in-addr.arpa
+192.168.0.50    50728 [14731] + MX   home.morettoni.local
+192.168.0.50    46493 [18677] + MX   home.morettoni.local
+
+7. if you use tinydns as a slave of BIND (or other software) master
+   you can set -s option, followed by a path to a external program (or
+   shell script). When tinydns receive a notify about zone change from
+   master it log a line with I and SOA (006) value; your external program
+   fetch (with tcpclient and axfr-get) the new zone and put into your
+   local data file. See update_slave.sh.sample file for an example, it
+   need a configurazion file (tinydns/root/allow) with a list of zone
+   and IP of the master server, one per line, like this:
+   zoneA.tld:MASTER_IP
+   zoneB.tld:ANOTHER_MASTER_IP
+
+   Another example is Makefile.example that replace original Makefile
+   inside tinydns/root directory; it merge all download data file
+   and compile it for tinydns use.
+   The external program is run with two argument: master IP address and
+   name of the zone.
+   Check ZONEDIR variable in the example script if you want to save
+   master zone file in other directory than tinydns/root.
+
+--
+Report me any bugs or suggestions!
+Luca Morettoni <luca@morettoni.net>
